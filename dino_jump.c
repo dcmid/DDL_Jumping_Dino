@@ -18,6 +18,15 @@
 
 // TODO: insert other definitions and declarations here
 
+void busout_8bit(unsigned int output){
+	for(int i=0; i<32; i++){
+		if((x>>i)&1)
+			FIO0PIN |= (1<<offset[i]);
+		else
+			FIO0PIN &= ~(1<<offset[i]);
+	}
+}
+
 int main(void) {
 
     // TODO: insert code here
