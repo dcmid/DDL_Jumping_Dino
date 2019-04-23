@@ -16,16 +16,26 @@
 
 // TODO: insert other include files here
 
-// TODO: insert other definitions and declarations here
+#define FIO0DIR (*(volatile unsigned int*)0x2009C000) //pin direction reg
+#define PINMODE0 (*(volatile unsigned int*)0x4002C040) //pin resistor mode reg
+#define FIO0PIN0 (*(volatile unsigned int*)0x2009C014) //pin value reg
 
-void busout_8bit(unsigned int output){
-	for(int i=0; i<32; i++){
-		if((x>>i)&1)
-			FIO0PIN |= (1<<offset[i]);
-		else
-			FIO0PIN &= ~(1<<offset[i]);
-	}
-}
+//#define EXTINT (*(volatile unsigned int*)0x400FC140) //external interrupt flag reg
+//#define EXTMODE (*(voaltile unsigned int*)0x400FC148) //external interrupt mode reg
+//#define EXTPOLAR (*(volatile unsigned int*)0x400FC14C) //external interrupt polarity reg
+
+
+#define SCK ((FIO0PIN0 >> 0) & 1)
+#define SDA ((FIO0PIN0 >> 1) & 1)
+
+//void busout_8bit(unsigned int output){
+//	for(int i=0; i<32; i++){
+//		if((x>>i)&1)
+//			FIO0PIN |= (1<<offset[i]);
+//		else
+//			FIO0PIN &= ~(1<<offset[i]);
+//	}
+//}
 
 int main(void) {
 
