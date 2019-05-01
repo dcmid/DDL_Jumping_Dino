@@ -17,9 +17,13 @@
 
 // TODO: insert other include files here
 
-#define FIO0DIR (*(volatile unsigned int*)0x2009C000) //pin direction reg
+#define FIO0DIR0 (*(volatile unsigned int*)0x2009C000) //pin direction reg
 #define PINMODE0 (*(volatile unsigned int*)0x4002C040) //pin resistor mode reg
 #define FIO0PIN0 (*(volatile unsigned int*)0x2009C014) //pin value reg
+
+#define FIO2DIR0 (*(volatile unsigned int*)0x2009C040)
+#define FIO2PIN0 (*(volatile unsigned int*)0x2009C054)
+#define PINMODE4 (*(volatile unsigned int*)0x4002C050)
 
 #define IO0IntEnF (*(volatile unsigned int*)0x40028094)
 #define IO0IntClr (*(volatile unsigned int*)0x4002808C)
@@ -30,14 +34,22 @@
 
 #define SPACEBAR 0b01001010001
 
-//void busout_8bit(unsigned int output){
+void write_lcd(unsigned int output){
+	//check if LCD busy
+	FIO2DIR0 &= ~(1<<0); //set 2.0 as input
+	PINMODE4 |= 0b11; //set 2.0 to have pull-down
+	while(FIO2DPIN & (1<<0)){}//wait for busy signal to clear
+
+	PINMODE4 = 0; //reset pin modes
+	FIO2DIR0 = 0xFF; //set 2.0-2.7 as output
+	FIO2PIN0 = output & 0xFF; //set
 //	for(int i=0; i<32; i++){
 //		if((x>>i)&1)
 //			FIO0PIN |= (1<<offset[i]);
 //		else
 //			FIO0PIN &= ~(1<<offset[i]);
 //	}
-//}
+}
 
 int num_clocks = 0;
 int space_pressed = 0;
@@ -64,7 +76,7 @@ int main(void) {
 
 	IO0IntEnF = (1<<0);//enable interrupts on falling edge of P0.0 (Pin 9)
 	ISER0 |= (1<<21);//enable interrupts from EINT3 (GPIO)
-	FIO0DIR = (1<<6);//set 0.18 (pin 11) as output
+	FIO0DIR0 = (1<<6);//set 0.6 (pin 8) as output
 
     while(1) {
     	FIO0PIN0 = (space_pressed<<6);
