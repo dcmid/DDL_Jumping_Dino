@@ -38,7 +38,7 @@ void write_lcd(unsigned int output){
 	//check if LCD busy
 	FIO2DIR0 &= ~(1<<0); //set 2.0 as input
 	PINMODE4 |= 0b11; //set 2.0 to have pull-down
-	while(FIO2DPIN & (1<<0)){}//wait for busy signal to clear
+	while(FIO2PIN0 & (1<<0)){}//wait for busy signal to clear
 
 	PINMODE4 = 0; //reset pin modes
 	FIO2DIR0 = 0xFF; //set 2.0-2.7 as output
