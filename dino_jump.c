@@ -14,6 +14,7 @@
 
 #include <cr_section_macros.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define FIO0DIR0 (*(volatile unsigned int*)0x2009C000) //pin direction reg
 #define PINMODE0 (*(volatile unsigned int*)0x4002C040) //pin resistor mode reg
@@ -27,8 +28,15 @@
 #define FIO2PIN1 (*(volatile unsigned int*)0x2009C055)
 
 #define IO0IntEnF (*(volatile unsigned int*)0x40028094)
-#define IO0IntClr (*(volatile unsigned int*)0x4002808C)
+#define IO0IntClr (*(volatile unsigned int*)0x4002808C) //used to clear IO interrupts
 #define ISER0 (*(volatile unsigned int*)0xE000E100)
+
+#define T0IR (*(volatile unsigned int*)0x40004000) //used to clear Timer0 interrupts
+#define T0TCR (*(volatile unsigned int*)0x40004004) //timer control reg
+#define T0MCR (*(volatile unsigned int*)0x40004014) //match control reg
+#define T0PR (*(volatile unsigned int*)0x4000400C) //prescalar reg
+#define T0MR0 (*(volatile unsigned int*)0x40004018) //match reg 0
+#define T0TC (*(volatile unsigned int*)0x40004008) //timer counter0
 
 #define SCK ((FIO0PIN0 >> 0) & 1) //SCK (ps2 clock) is at P0.0 (pin 9)
 #define SDA ((FIO0PIN0 >> 1) & 1) //SDA (ps2 data) is at P0.1 (pin 10)
@@ -45,6 +53,8 @@
 int num_clocks = 0;
 int space_pressed = 0;
 unsigned int ps2_data = 0;
+
+int dino_jumping = 0;
 
 void wait_ticks(int ticks){
 	for(int i =0; i<ticks; i++){}
@@ -109,6 +119,31 @@ void EINT3_IRQHandler(void){//executes on falling edge of SCK (ps2 clock)
 	IO0IntClr |= (1<<0);//clear interrupt
 }
 
+void TIMER0_IRQHandler(void){
+	printf("J\n");
+	T0IR |= (1<<0); //clear interrupt
+}
+
+void shift_chars_ascii(unsigned int chars_ascii[4][20]){
+	for(int i=0; i<4; i++){
+//		chars_ascii[1][i] = chars_ascii[1][i+1];
+//		chars_ascii[2][i] = chars_ascii[2][i+1];
+//		chars_ascii[3][i] = chars_ascii[3][i+1];
+		if(!(chars_ascii[3][i] == BACKGND || chars_ascii[3][i] == FRONTGND || chars_ascii[3][i+1] == BACKGND))//don't shift dino
+			chars_ascii[3][i] = chars_ascii[3][i+1];
+	}
+	for(int i=4; i<19; i++)
+		chars_ascii[3][i] = chars_ascii[3][i+1];
+//	chars_ascii[3][0] = 0x5F;
+//	chars_ascii[3][1] = 0x5F;
+//	chars_ascii[3][2] = BACKGND;
+//	chars_ascii[3][3] = FRONTGND;
+//	chars_ascii[2][0] = 0x10;
+//	chars_ascii[2][1] = 0x10;
+//	chars_ascii[2][2] = 0x10;
+//	chars_ascii[2][3] = HEAD;
+}
+
 int main(void) {
 	int dinohead[8] = {0x00, 0x00, 0x00, 0x00, 0x1F, 0x17, 0x1F, 0x18};
 	int dinofrontGND[8] = {0x1F, 0x1C, 0x1E, 0x1A, 0x08, 0x08, 0x0C, 0x1F};
@@ -118,7 +153,7 @@ int main(void) {
 	int cactus[8] = {0x00, 0x04, 0x15, 0x1F, 0x04, 0x04, 0x04, 0x1F};
 
 	unsigned int chars_ascii[4][20] = {
-			{0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10},
+			{0x10,0x10,0x10,0x44,0x49,0x4E,0x4F,0x10,0x4A,0x55,0x4D,0x50,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10},
 			{0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10},
 			{0x10,0x10,0x10,HEAD,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10,0x10},
 			{0x5F,0x5F,BACKGND,FRONTGND,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F},
@@ -129,43 +164,51 @@ int main(void) {
 	ISER0 |= (1<<21);//enable interrupts from EINT3 (GPIO)
 	FIO0DIR0 |= (1<<6);//set 0.6 (pin 8) as output
 
+	ISER0 |= (1<<1);//enable interrupts from Timer0
+	T0PR = 500; //set prescalar
+	T0MR0 = 1000; //set match value
+	T0MCR |= (0b11<<0); //enable interrupt on MR0, reset counter on match
+	T0TC = 0;
+	T0TCR |= (1<<0); //enable Timer0
+
 	FIO2DIR1 |= (0b1101); //set 2.8,2.10,2.11 as outputs
 	FIO2PIN1 &= ~(0xFF); //clear control signals to LCD
 
-//	write_lcd(0x40, 0);
-
-//		for(int i=0; i<8; i++) { //create the dino's head
-//			write_lcd(dinohead[i], 1);
-//		}
-//
-//		for(int i=0; i<8; i++) { //create the dino's head
-//				write_lcd(dinofrontGND[i], 1);
-//		}
-//
-//		for(int i=0; i<8; i++) { //create the dino's head
-//					write_lcd(dinofrontAir[i], 1);
-//		}
-//
-//		for(int i=0; i<8; i++) { //create the dino's head
-//					write_lcd(dinobackGND[i], 1);
-//		}
-//
-//		for(int i=0; i<8; i++) { //create the dino's head
-//					write_lcd(dinobackAir[i], 1);
-//		}
-//
-//		for(int i=0; i<8; i++) { //create the dino's head
-//					write_lcd(cactus[i], 1);
-//		}
-
 	write_lcd(0x38, 0);//set 2 line mode COMMENTING THIS OUT MAKES DISPLAY WORK, BUT NOT ALL LINES
+
+	//initialize custom characters
+	write_lcd(0x40, 0);
+	for(int i=0; i<8; i++) { //create the dino's head
+		write_lcd(dinohead[i], 1);
+	}
+	for(int i=0; i<8; i++) { //create the dino's head
+			write_lcd(dinofrontGND[i], 1);
+	}
+	for(int i=0; i<8; i++) { //create the dino's head
+				write_lcd(dinofrontAir[i], 1);
+	}
+	for(int i=0; i<8; i++) { //create the dino's head
+				write_lcd(dinobackGND[i], 1);
+	}
+	for(int i=0; i<8; i++) { //create the dino's head
+				write_lcd(dinobackAir[i], 1);
+	}
+	for(int i=0; i<8; i++) { //create the dino's head
+				write_lcd(cactus[i], 1);
+	}
 
 	write_lcd(0x0C, 0);//turn on display and off cursor
 	write_lcd(0x01, 0);//clear screen
 	//write_lcd(0xC0, 0);//set DDRAM addr to line 2
 	draw(chars_ascii);
 
+	//int jump_time
+
     while(1) {
+    	wait_ticks(100000);
+    	shift_chars_ascii(chars_ascii);
+    	chars_ascii[3][19] = (rand() < RAND_MAX/4) ? CACTUS : 0x5F;
+    	draw(chars_ascii);
     	FIO0PIN0 = (space_pressed<<6);
     }
     return 0 ;
