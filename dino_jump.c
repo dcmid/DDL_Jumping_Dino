@@ -79,7 +79,7 @@ void draw(unsigned int chars_ascii[4][20]){
 	write_lcd(0xC0, 0); //set DDRAM addr to 0x40
 	for(int i=0; i<2; i++){
 		for(int j=0; j<20; j++){
-			write_lcd(chars_ascii[2*(i+1)][j], 1); //draw 2nd and 4th lines
+			write_lcd(chars_ascii[2*(i+1)-1][j], 1); //draw 2nd and 4th lines
 		}
 	}
 }
@@ -122,12 +122,9 @@ int main(void) {
 	FIO2PIN1 &= ~(0xFF); //clear control signals to LCD
 
 	write_lcd(0x01, 0);//clear screen
-	write_lcd(0x0E, 0);
-	for(int i=0; i<25; i++){
-	write_lcd(0x41, 1);
-	write_lcd(0x42, 1);
-	}
-	draw(chars_ascii);
+	write_lcd(0xD0, 0);//set DDRAM addr to line 2
+	write_lcd(0x42, 1);//write char
+	//draw(chars_ascii);
 
     while(1) {
     	FIO0PIN0 = (space_pressed<<6);
