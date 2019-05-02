@@ -15,8 +15,6 @@
 #include <cr_section_macros.h>
 #include <stdio.h>
 
-// TODO: insert other include files here
-
 #define FIO0DIR0 (*(volatile unsigned int*)0x2009C000) //pin direction reg
 #define PINMODE0 (*(volatile unsigned int*)0x4002C040) //pin resistor mode reg
 #define FIO0PIN0 (*(volatile unsigned int*)0x2009C014) //pin value reg
@@ -24,6 +22,9 @@
 #define FIO2DIR0 (*(volatile unsigned int*)0x2009C040)
 #define FIO2PIN0 (*(volatile unsigned int*)0x2009C054)
 #define PINMODE4 (*(volatile unsigned int*)0x4002C050)
+
+#define FIO2DIR1 (*(volatile unsigned int*)0x2009C041)
+#define FIO2PIN1 (*(volatile unsigned int*)0x2009C055)
 
 #define IO0IntEnF (*(volatile unsigned int*)0x40028094)
 #define IO0IntClr (*(volatile unsigned int*)0x4002808C)
@@ -34,26 +35,38 @@
 
 #define SPACEBAR 0b01001010001
 
-void write_lcd(unsigned int output){
-	//check if LCD busy
-	FIO2DIR0 &= ~(1<<0); //set 2.0 as input
-	PINMODE4 |= 0b11; //set 2.0 to have pull-down
-	while(FIO2PIN0 & (1<<0)){}//wait for busy signal to clear
-
-	PINMODE4 = 0; //reset pin modes
-	FIO2DIR0 = 0xFF; //set 2.0-2.7 as output
-	FIO2PIN0 = output & 0xFF; //set
-//	for(int i=0; i<32; i++){
-//		if((x>>i)&1)
-//			FIO0PIN |= (1<<offset[i]);
-//		else
-//			FIO0PIN &= ~(1<<offset[i]);
-//	}
-}
 
 int num_clocks = 0;
 int space_pressed = 0;
 unsigned int ps2_data = 0;
+
+void wait_ticks(int ticks){
+	for(int i =0; i<ticks; i++){}
+}
+
+void write_lcd(unsigned int output, int is_data){
+	//check if LCD busy
+	FIO2DIR0 &= ~(0xFF); //set 2.0-2.7 as inputs
+	PINMODE4 |= 0xFF; //set 2.0-2.7 to have pull-down
+	FIO2PIN1 &= ~(1<<0); //clear RS
+	FIO2PIN1 |= 0b1100; //set RW and E
+	wait_ticks(1);
+	while(FIO2PIN0 & (1<<7)){//wait for busy signal to clear
+		FIO2PIN1 &= ~(1<<3); // clear E (2.11)
+		wait_ticks(1);
+		FIO2PIN1 |= (1<<3); //set E;
+		wait_ticks(1);
+	}
+
+	FIO2PIN1 = (is_data && 1); //clear RW and E, set/clear RS if write is data/instruction
+	wait_ticks(1);
+	FIO2PIN1 |= (1<<3); //set E
+	PINMODE4 = 0; //reset pin modes
+	FIO2DIR0 |= 0xFF; //set 2.0-2.7 as output
+	FIO2PIN0 &= ~(0xFF); //clear outputs
+	FIO2PIN0 |= output & 0xFF; //set outputs
+	FIO2PIN1 &= ~(1<<3); // clear E (2.11)
+}
 
 void shift_in(int bit_in){
 	ps2_data = ps2_data<<1; //shift ps2_data
@@ -76,7 +89,15 @@ int main(void) {
 
 	IO0IntEnF = (1<<0);//enable interrupts on falling edge of P0.0 (Pin 9)
 	ISER0 |= (1<<21);//enable interrupts from EINT3 (GPIO)
-	FIO0DIR0 = (1<<6);//set 0.6 (pin 8) as output
+	FIO0DIR0 |= (1<<6);//set 0.6 (pin 8) as output
+
+	FIO2DIR1 |= (0b1101); //set 2.8,2.10,2.11 as outputs
+	FIO2PIN1 &= ~(0xFF); //clear control signals to LCD
+
+	write_lcd(0x01, 0);//clear screen
+	write_lcd(0x0E, 0);
+	write_lcd(0x41, 1);
+	write_lcd(0x42, 1);
 
     while(1) {
     	FIO0PIN0 = (space_pressed<<6);
