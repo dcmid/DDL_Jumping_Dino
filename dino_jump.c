@@ -124,12 +124,39 @@ int main(void) {
 			{0x5F,0x5F,BACKGND,FRONTGND,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F,0x5F},
 	};
 
+
 	IO0IntEnF = (1<<0);//enable interrupts on falling edge of P0.0 (Pin 9)
 	ISER0 |= (1<<21);//enable interrupts from EINT3 (GPIO)
 	FIO0DIR0 |= (1<<6);//set 0.6 (pin 8) as output
 
 	FIO2DIR1 |= (0b1101); //set 2.8,2.10,2.11 as outputs
 	FIO2PIN1 &= ~(0xFF); //clear control signals to LCD
+
+//	write_lcd(0x40, 0);
+
+//		for(int i=0; i<8; i++) { //create the dino's head
+//			write_lcd(dinohead[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//				write_lcd(dinofrontGND[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(dinofrontAir[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(dinobackGND[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(dinobackAir[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(cactus[i], 1);
+//		}
 
 	write_lcd(0x38, 0);//set 2 line mode COMMENTING THIS OUT MAKES DISPLAY WORK, BUT NOT ALL LINES
 
