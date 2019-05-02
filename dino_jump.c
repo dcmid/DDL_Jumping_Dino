@@ -72,7 +72,15 @@ void draw(unsigned int chars_ascii[4][20]){
 	write_lcd(0x80, 0); //set DDRAM addr to 0
 	for(int i=0; i<2; i++){
 		for(int j=0; j<20; j++){
-			write_lcd(chars_ascii[2*i, j], 0);
+			write_lcd(chars_ascii[2*i][j], 1); //draw 1st and 3rd lines
+		}
+	}
+
+	write_lcd(0xC0, 0); //set DDRAM addr to 0x40
+	write_lcd(0x80, 0); //set DDRAM addr to 0
+	for(int i=0; i<2; i++){
+		for(int j=0; j<20; j++){
+			write_lcd(chars_ascii[2*(i+1)][j], 1); //draw 2nd and 4th lines
 		}
 	}
 }
