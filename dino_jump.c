@@ -34,6 +34,12 @@
 #define SDA ((FIO0PIN0 >> 1) & 1) //SDA (ps2 data) is at P0.1 (pin 10)
 
 #define SPACEBAR 0b01001010001
+#define HEAD 0x00
+#define FRONTGND 0x01
+#define FRONTAIR 0x02
+#define BACKGND 0x03
+#define BACKAIR 0x04
+#define CACTUS 0x05
 
 
 int num_clocks = 0;
@@ -49,7 +55,9 @@ void write_lcd(unsigned int output, int is_data){
 	FIO2DIR0 &= ~(0xFF); //set 2.0-2.7 as inputs
 	PINMODE4 |= 0xFF; //set 2.0-2.7 to have pull-down
 	FIO2PIN1 &= ~(1<<0); //clear RS
-	FIO2PIN1 |= 0b1100; //set RW and E
+	FIO2PIN1 |= (1<<2); //set RW
+	wait_ticks(1);
+	FIO2PIN1 |= (1<<3); // and E
 	wait_ticks(1);
 	while(FIO2PIN0 & (1<<7)){//wait for busy signal to clear
 		FIO2PIN1 &= ~(1<<3); // clear E (2.11)
@@ -76,7 +84,7 @@ void draw(unsigned int chars_ascii[4][20]){
 		}
 	}
 
-	write_lcd(0xC0, 0); //set DDRAM addr to 0x40
+	write_lcd(0xC0, 0); //set DDRAM addr to 0x40 (2nd line according to data sheet)
 	for(int i=0; i<2; i++){
 		for(int j=0; j<20; j++){
 			write_lcd(chars_ascii[2*(i+1)-1][j], 1); //draw 2nd and 4th lines
@@ -109,9 +117,16 @@ int main(void) {
 	int dinobackAir[8] = {0x09, 0x0F, 0x0F, 0x07, 0x02, 0x02, 0x03, 0x00};
 	int cactus[8] = {0x00, 0x04, 0x15, 0x1F, 0x04, 0x04, 0x04, 0x1F};
 
+	unsigned int chars_ascii[4][20];
+
 	for(int i=0; i<2; i++){
 		for(int j=0; j<20; j++)
-			chars_ascii[2*i+1][j] = 0x43 + i; //write C to line 3, D to line 4
+			chars_ascii[2*i][j] = 0x41 + i; //write A to line 1, B to line 3
+	}
+
+	for(int i=0; i<2; i++){
+		for(int j=0; j<20; j++)
+			chars_ascii[2*i+1][j] = 0x43 + i; //write C to line 2, D to line 4
 	}
 
 
@@ -122,38 +137,38 @@ int main(void) {
 	FIO2DIR1 |= (0b1101); //set 2.8,2.10,2.11 as outputs
 	FIO2PIN1 &= ~(0xFF); //clear control signals to LCD
 
-	write_lcd(0x40, 0);
+//	write_lcd(0x40, 0);
 
-		for(int i=0; i<8; i++) { //create the dino's head
-			write_lcd(dinohead[i], 1);
-		}
+//		for(int i=0; i<8; i++) { //create the dino's head
+//			write_lcd(dinohead[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//				write_lcd(dinofrontGND[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(dinofrontAir[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(dinobackGND[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(dinobackAir[i], 1);
+//		}
+//
+//		for(int i=0; i<8; i++) { //create the dino's head
+//					write_lcd(cactus[i], 1);
+//		}
 
-		for(int i=0; i<8; i++) { //create the dino's head
-				write_lcd(dinofrontGND[i], 1);
-		}
 
-		for(int i=0; i<8; i++) { //create the dino's head
-					write_lcd(dinofrontAir[i], 1);
-		}
-
-		for(int i=0; i<8; i++) { //create the dino's head
-					write_lcd(dinobackGND[i], 1);
-		}
-
-		for(int i=0; i<8; i++) { //create the dino's head
-					write_lcd(dinobackAir[i], 1);
-		}
-
-		for(int i=0; i<8; i++) { //create the dino's head
-					write_lcd(cactus[i], 1);
-		}
-
-
-
+	//write_lcd(0x38, 0);//set 2 line mode COMMENTING THIS OUT MAKES DISPLAY WORK, BUT NOT ALL LINES
+	write_lcd(0x0F, 0);//turn on display and cursor
 	write_lcd(0x01, 0);//clear screen
-	write_lcd(0xD0, 0);//set DDRAM addr to line 2
-	write_lcd(0x42, 1);//write char
-	//draw(chars_ascii);
+	//write_lcd(0xC0, 0);//set DDRAM addr to line 2
+	draw(chars_ascii);
 
     while(1) {
     	FIO0PIN0 = (space_pressed<<6);
