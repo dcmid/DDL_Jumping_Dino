@@ -68,6 +68,15 @@ void write_lcd(unsigned int output, int is_data){
 	FIO2PIN1 &= ~(1<<3); // clear E (2.11)
 }
 
+void draw(unsigned int chars_ascii[4][20]){
+	write_lcd(0x80, 0); //set DDRAM addr to 0
+	for(int i=0; i<2; i++){
+		for(int j=0; j<20; j++){
+			write_lcd(chars_ascii[2*i, j], 0);
+		}
+	}
+}
+
 void shift_in(int bit_in){
 	ps2_data = ps2_data<<1; //shift ps2_data
 	ps2_data |= (bit_in<<0); //insert bit_in
@@ -96,8 +105,10 @@ int main(void) {
 
 	write_lcd(0x01, 0);//clear screen
 	write_lcd(0x0E, 0);
+	for(int i=0; i<25; i++){
 	write_lcd(0x41, 1);
 	write_lcd(0x42, 1);
+	}
 
     while(1) {
     	FIO0PIN0 = (space_pressed<<6);
