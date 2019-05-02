@@ -77,7 +77,6 @@ void draw(unsigned int chars_ascii[4][20]){
 	}
 
 	write_lcd(0xC0, 0); //set DDRAM addr to 0x40
-	write_lcd(0x80, 0); //set DDRAM addr to 0
 	for(int i=0; i<2; i++){
 		for(int j=0; j<20; j++){
 			write_lcd(chars_ascii[2*(i+1)][j], 1); //draw 2nd and 4th lines
@@ -104,6 +103,17 @@ void EINT3_IRQHandler(void){//executes on falling edge of SCK (ps2 clock)
 
 int main(void) {
 
+	unsigned int chars_ascii[4][20];
+	for(int i=0; i<2; i++){
+		for(int j=0; j<20; j++)
+			chars_ascii[2*i][j] = 0x41 + i; //write A to line 1, B to line 2
+	}
+
+	for(int i=0; i<2; i++){
+		for(int j=0; j<20; j++)
+			chars_ascii[2*i+1][j] = 0x43 + i; //write C to line 3, D to line 4
+	}
+
 	IO0IntEnF = (1<<0);//enable interrupts on falling edge of P0.0 (Pin 9)
 	ISER0 |= (1<<21);//enable interrupts from EINT3 (GPIO)
 	FIO0DIR0 |= (1<<6);//set 0.6 (pin 8) as output
@@ -117,6 +127,7 @@ int main(void) {
 	write_lcd(0x41, 1);
 	write_lcd(0x42, 1);
 	}
+	draw(chars_ascii);
 
     while(1) {
     	FIO0PIN0 = (space_pressed<<6);
