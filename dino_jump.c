@@ -77,10 +77,9 @@ void draw(unsigned int chars_ascii[4][20]){
 	}
 
 	write_lcd(0xC0, 0); //set DDRAM addr to 0x40
-	write_lcd(0x80, 0); //set DDRAM addr to 0
 	for(int i=0; i<2; i++){
 		for(int j=0; j<20; j++){
-			write_lcd(chars_ascii[2*(i+1)][j], 1); //draw 2nd and 4th lines
+			write_lcd(chars_ascii[2*(i+1)-1][j], 1); //draw 2nd and 4th lines
 		}
 	}
 }
@@ -103,7 +102,6 @@ void EINT3_IRQHandler(void){//executes on falling edge of SCK (ps2 clock)
 }
 
 int main(void) {
-
 	int dinohead[8] = {0x00, 0x00, 0x00, 0x00, 0x1F, 0x17, 0x1F, 0x18};
 	int dinofrontGND[8] = {0x1F, 0x1C, 0x1E, 0x1A, 0x08, 0x08, 0x0C, 0x1F};
 	int dinofrontAir[8] = {0x1F, 0x1C, 0x1E, 0x1A, 0x08, 0x08, 0x0C, 0x00};
@@ -111,6 +109,10 @@ int main(void) {
 	int dinobackAir[8] = {0x09, 0x0F, 0x0F, 0x07, 0x02, 0x02, 0x03, 0x00};
 	int cactus[8] = {0x00, 0x04, 0x15, 0x1F, 0x04, 0x04, 0x04, 0x1F};
 
+	for(int i=0; i<2; i++){
+		for(int j=0; j<20; j++)
+			chars_ascii[2*i+1][j] = 0x43 + i; //write C to line 3, D to line 4
+	}
 
 	IO0IntEnF = (1<<0);//enable interrupts on falling edge of P0.0 (Pin 9)
 	ISER0 |= (1<<21);//enable interrupts from EINT3 (GPIO)
@@ -120,11 +122,9 @@ int main(void) {
 	FIO2PIN1 &= ~(0xFF); //clear control signals to LCD
 
 	write_lcd(0x01, 0);//clear screen
-	write_lcd(0x0E, 0);
-	for(int i=0; i<25; i++){
-	write_lcd(0x41, 1);
-	write_lcd(0x42, 1);
-	}
+	write_lcd(0xD0, 0);//set DDRAM addr to line 2
+	write_lcd(0x42, 1);//write char
+	//draw(chars_ascii);
 
     while(1) {
     	FIO0PIN0 = (space_pressed<<6);
