@@ -24,12 +24,23 @@
 #define IO0IntClr (*(volatile unsigned int*)0x4002808C) //used to clear IO interrupts
 #define ISER0 (*(volatile unsigned int*)0xE000E100)
 
+//T
 #define T0IR (*(volatile unsigned int*)0x40004000) //used to clear Timer0 interrupts
 #define T0TCR (*(volatile unsigned int*)0x40004004) //timer control reg
 #define T0MCR (*(volatile unsigned int*)0x40004014) //match control reg
 #define T0PR (*(volatile unsigned int*)0x4000400C) //prescalar reg
 #define T0MR0 (*(volatile unsigned int*)0x40004018) //match reg 0
 #define T0TC (*(volatile unsigned int*)0x40004008) //timer counter0
+
+//DAC regs
+#define DACR (*(volatile unsigned int*)0x4008C000)
+#define DACCTRL (*(volatile unsigned int*)0x4008C004)
+#define DACCNTVAL (*(volatile unsigned int*)0x4008C008)
+#define PINSEL1 (*(volatile unsigned int*)0x4002C004)
+#define PINMODE1 (*(volatile unsigned int*)0x4002C044)
+#define FIO0DIR0 (*(volatile unsigned int *)0x2009c000)
+#define FIO0DIR3 (*(volatile unsigned int *)0x2009c003)
+#define FIO0PIN (*(volatile unsigned int *)0x2009c014)
 
 #define SCK ((FIO0PIN0 >> 0) & 1) //SCK (ps2 clock) is at P0.0 (pin 9)
 #define SDA ((FIO0PIN0 >> 1) & 1) //SDA (ps2 data) is at P0.1 (pin 10)
@@ -41,6 +52,8 @@
 #define BACKGND 0x03
 #define BACKAIR 0x04
 #define CACTUS 0x05
+
+#define M_PI 3.14159265358979323846
 
 
 #endif /* DINO_JUMP_H_ */
